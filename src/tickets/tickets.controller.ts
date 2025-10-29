@@ -7,9 +7,17 @@ import {
   TicketType,
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 
-interface newTicketDto {
+class newTicketDto {
+  @ApiProperty({ example: 'managementReport', required: true })
+  @IsNotEmpty()
   type: TicketType;
+
+  @ApiProperty({ example: 1, required: true })
+  @IsNotEmpty()
   companyId: number;
 }
 
@@ -22,9 +30,12 @@ interface TicketDto {
   category: TicketCategory;
 }
 
+@ApiTags('Tickets')
 @Controller('api/v1/tickets')
 export class TicketsController {
   @Get()
+  @ApiOperation({ summary: 'Get all tickets' })
+  @ApiResponse({ status: 200, description: 'Returns an array of tickets.' })
   async findAll() {
     return await Ticket.findAll({ include: [Company, User] });
   }
