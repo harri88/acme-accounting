@@ -16,10 +16,6 @@ import { User } from 'db/models/User';
       provide: "TICKET_REPOSITORY",
       useValue: Ticket,
     },
-     {
-      provide: "TICKET_REPOSITORY",
-      useValue: Ticket,
-    },
     {
       provide: "USER_REPOSITORY",
       useValue: User,
