@@ -13,7 +13,7 @@ export class ReportsService {
     fs: 'idle',
   };
 
-  
+
   state(scope: string) {
     return this.states[scope];
   }
@@ -21,7 +21,7 @@ export class ReportsService {
   // Build account categories for Financial Statement
   // Returns a structured object categorizing accounts
   private buildCategories() {
-    return  {
+    return {
       'Income Statement': {
         Revenues: ['Sales Revenue'],
         Expenses: [
@@ -52,13 +52,13 @@ export class ReportsService {
         Equity: ['Common Stock', 'Retained Earnings'],
       },
     };
-}
+  }
 
- 
-// Main function to generate all reports
-// Reads and processes files in parallel with a limit
-// Generates reports concurrently
-// Updates states accordingly
+
+  // Main function to generate all reports
+  // Reads and processes files in parallel with a limit
+  // Generates reports concurrently
+  // Updates states accordingly
 
   async generateAllReports() {
 
@@ -68,11 +68,11 @@ export class ReportsService {
     const tmpDir = './tmp';
     const start = performance.now();
 
-    
+
     const accountBalances: Record<string, number> = {};
     const cashByYear: Record<string, number> = {};
 
-    
+
     try {
       const files = await fs.readdir(tmpDir, { withFileTypes: true });
 
@@ -85,7 +85,7 @@ export class ReportsService {
 
           for (const line of lines) {
             const [date, account, , debit, credit] = line.split(',');
-            
+
             if (!accountBalances[account]) {
               accountBalances[account] = 0;
             }
@@ -127,7 +127,7 @@ export class ReportsService {
 
 
   // Generate Accounts Report
-  private async generateAccounts( accountBalances: Record<string, number>, start: number) {
+  private async generateAccounts(accountBalances: Record<string, number>, start: number) {
     const outputFile = path.join('./out', 'accounts.csv');
 
     try {
@@ -166,7 +166,7 @@ export class ReportsService {
 
   private async generateFS(accountBalances: Record<string, number>, start: number) {
     const outputFile = path.join('./out', 'fs.csv');
-    
+
     const categories = this.buildCategories();
 
     const output: string[] = [];
