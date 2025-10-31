@@ -66,6 +66,10 @@ export class TicketsController {
         throw new ConflictException(`An open ticket of type registrationAddressChange already exists for this company.`);
       }
         break;
+      case TicketType.strikeOff:
+        category = TicketCategory.management;
+        userRole = UserRole.director;
+        break;
       default:
         throw new ConflictException(`Invalid ticket type: ${type}`);
     }
@@ -80,12 +84,19 @@ export class TicketsController {
       userRole = UserRole.director;
       assignees = await User.findAll({ where: { companyId, role: userRole }, order: [['createdAt', 'DESC']],});
 
-      // If multiple directors found, throw conflict error
+      
       if (assignees.length > 1) {
         throw new ConflictException(
           `Multiple users with role ${userRole}. Cannot create a ticket`,
         );    
       }
+    }
+
+    // If type is not managementReport and multiple directors found, throw conflict error
+    if (type !== TicketType.managementReport && assignees.length > 1) {
+      throw new ConflictException(
+        `Multiple users with role ${userRole}. Cannot create a ticket`,
+      );
     }
 
     if (!assignees.length)
