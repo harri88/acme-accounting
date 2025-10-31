@@ -43,21 +43,50 @@ export class TicketsController {
   @Post()
   async create(@Body() newTicketDto: newTicketDto) {
     const { type, companyId } = newTicketDto;
+    var category,userRole: string = "";
 
-    const category =
-      type === TicketType.managementReport
-        ? TicketCategory.accounting
-        : TicketCategory.corporate;
+    switch (type) {
+      case TicketType.managementReport:
+        category = TicketCategory.accounting;
+        userRole = UserRole.accountant;
+        break;
+      case TicketType.registrationAddressChange:
+        category = TicketCategory.corporate;
+        userRole = UserRole.corporateSecretary;
 
-    const userRole =
-      type === TicketType.managementReport
-        ? UserRole.accountant
-        : UserRole.corporateSecretary;
+        const existingTicket = await Ticket.findOne({
+            where: {
+              companyId,
+              type: TicketType.registrationAddressChange,
+              status: TicketStatus.open, // this ensures we only check for open tickets
+        },
+      });
+      
+      if (existingTicket) {
+        throw new ConflictException(`An open ticket of type registrationAddressChange already exists for this company.`);
+      }
+        break;
+      default:
+        throw new ConflictException(`Invalid ticket type: ${type}`);
+    }
 
-    const assignees = await User.findAll({
+    var assignees = await User.findAll({
       where: { companyId, role: userRole },
       order: [['createdAt', 'DESC']],
     });
+    
+    // Fallback to director if no corporate secretary found for registration address change
+     if (!assignees.length && type === TicketType.registrationAddressChange) {
+      userRole = UserRole.director;
+      assignees = await User.findAll({ where: { companyId, role: userRole }, order: [['createdAt', 'DESC']],});
+
+      // If multiple directors found, throw conflict error
+      if (assignees.length > 1) {
+        throw new ConflictException(
+          `Multiple users with role ${userRole}. Cannot create a ticket`,
+        );    
+      }
+    }
 
     if (!assignees.length)
       throw new ConflictException(
