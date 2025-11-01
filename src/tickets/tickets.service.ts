@@ -11,7 +11,7 @@ export class TicketsService {
         @Inject('TICKET_REPOSITORY') private ticketRepository: typeof Ticket,
         @Inject('USER_REPOSITORY') private userRepository: typeof User, // injected user repo
     ) { }
-    
+
     // Get all tickets with associated Company and User details
     async getAllTickets(): Promise<Ticket[]> {
         return this.ticketRepository.findAll({ include: [Company, User] });
@@ -21,28 +21,28 @@ export class TicketsService {
         const { type, companyId } = createTicketDto;
         const { category, userRole } = this.getRoleCategoryMapping(type);
 
+        var assignees = await this.getAssigneeByRole(companyId, userRole);
+
         // Check for existing open registrationAddressChange ticket for the company
         if (type === TicketType.registrationAddressChange) {
             const isTicketExist = await this.checkExistingOpenRegistrationAddressChangeTicket(companyId);
             if (isTicketExist) {
                 throw new ConflictException(`An open ticket of type registrationAddressChange already exists for this company.`);
             }
-        }
+            // Fallback to director if no corporate secretary found for registration address change
+            if (!assignees.length) {
+                assignees = await this.getAssigneeByRole(companyId, UserRole.director);
 
-        var assignees = await this.getAssigneeByRole(companyId, userRole);
-
-        // Fallback to director if no corporate secretary found for registration address change
-        if (type === TicketType.registrationAddressChange && !assignees.length) {
-            assignees = await this.getAssigneeByRole(companyId, UserRole.director);
-
-            if (assignees.length > 1) {
-                throw new ConflictException(
-                    `Multiple users with role ${userRole}. Cannot create a ticket`,
-                );
+                if (assignees.length > 1) {
+                    throw new ConflictException(
+                        `Multiple users with role ${userRole}. Cannot create a ticket`,
+                    );
+                }
             }
         }
 
         // If type is not managementReport and multiple directors found, throw conflict error
+        // to cover previous logic if userRole === UserRole.corporateSecretary and multiple found and new logic ticket assigned to director and multiple found
         if (type !== TicketType.managementReport && assignees.length > 1) {
             throw new ConflictException(
                 `Multiple users with role ${userRole}. Cannot create a ticket`,
